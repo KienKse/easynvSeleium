@@ -9,7 +9,7 @@ public enum Enums {
 
 
     /** Auth */
-    CPF("06911519543"),
+    CPF("RANDOM"),
     PASS("RANDOM");
 
 
