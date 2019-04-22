@@ -1,13 +1,11 @@
 package com.kien.easynvest.application;
 
-import com.kien.easynvest.tools.PassCript;
 import com.kien.easynvest.enums.Enums;
+import com.kien.easynvest.tools.PassCript;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.request.SendMessage;
 import org.junit.runner.Runner;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -17,15 +15,19 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.logging.Logger;
 
 @SpringBootApplication
 public class EasyApplication implements CommandLineRunner {
 
+	private static final String ELEMENTO_CELULA_VALOR_NAO_ENCONTRADO = "Elemento celula -> valor - não encontrado";
 	private static TelegramBot telegramBot = new TelegramBot(Enums.TELEGRAM_KEY.getValor());
 	private static Logger logger = Logger.getLogger(String.valueOf(Runner.class));
+	private static final String VALOR_INVESTIDO_CELL_TEXT = "Valor investido";
 
 	public static void main(String[] args) {
 		SpringApplication.run(EasyApplication.class, args);
@@ -40,12 +42,16 @@ public class EasyApplication implements CommandLineRunner {
 //        driver = new ChromeDriver(chrome);
 		driver = new ChromeDriver();
 
-		if(grantApplicationAccess()) {
+		if(verificarCredenciais()) {
 			try {
 
 				driver.get(Enums.SITE_AUTENTICACAO_EASY.getValor());
 
+				dontLoadPage(driver, 2000L);
+
+				/** popUp Easy
 				fecharPopUp(driver);
+				 */
 
 				WebElement login = new WebDriverWait(driver, 20).until(
 						ExpectedConditions.presenceOfElementLocated(By.name("username")));
@@ -58,7 +64,8 @@ public class EasyApplication implements CommandLineRunner {
 
 				driver.findElement(By.xpath("//button[@font-family='Rational-Medium']")).click();
 
-				WebElement verificacaoLogado = getWebElement(driver, "//a[text()='Acompanhar']");
+				WebElement verificacaoLogado = new WebDriverWait(driver, 20).until(
+						ExpectedConditions.presenceOfElementLocated(By.xpath("//a[text()='Acompanhar']")));
 				if (verificacaoLogado == null) {
 					botMessage("Infelizmente ocorreu algum erro durante a autenticação no site da corretora");
 					finalizar(driver);
@@ -70,29 +77,24 @@ public class EasyApplication implements CommandLineRunner {
 				WebElement investimento1 = getWebElement(driver, "//p[text()='" + Enums.INVEST_1.getValor() + "']");
 				clicar(investimento1);
 
-				WebElement valorLiquido1 = getWebElement(driver, "//span[@class='sc-fONwsr lbnRXV']");
-				String valor1 = valorLiquido1.getText();
-				valor1 = retirarCaracteresValor(valor1);
+				WebElement valorLiquido1 = investElementScreenLiquid(driver);
+				String valor1 = getStringValueToSheet(valorLiquido1);
 
 				botMessage(messagemInvestimento(Enums.INVEST_1));
 				botMessage(valorLiquido1.getText());
-				Double variacao = Double.valueOf(valor1)- 1302.84;
-				botMessage("Variação: " + variacao);
 
 				fecharPopUp(driver);
 
 				WebElement investimento2 = getWebElement(driver, "//p[text()='" + Enums.INVEST_2.getValor() + "']");
 				clicar(investimento2);
 
-				WebElement valorLiquido2 = getWebElement(driver, "//span[@class='sc-fONwsr lbnRXV']");
-				String valor2 = valorLiquido2.getText();
-				valor2 = retirarCaracteresValor(valor2);
+				WebElement valorLiquido2 = investElementScreenLiquid(driver);
+				String valor2 = getStringValueToSheet(valorLiquido2);
 
 				botMessage(messagemInvestimento(Enums.INVEST_2));
 				botMessage(valorLiquido2.getText());
-				Double variacao2 = Double.valueOf(valor2)- 701.66;
-				botMessage("Variação2: " + variacao2);
 
+				peformPlanilha(driver, valor1, valor2) ;
 
 				finalizar(driver);
 
@@ -107,12 +109,186 @@ public class EasyApplication implements CommandLineRunner {
 		}
 	}
 
+	private static boolean verificarCredenciais() {
+		if(grantApplicationAccess(Enums.AUTH_1_1, Enums.AUTH_1_2, Enums.AUTH_1_3)) {
+			logger.info("Granted 1 ");
+			if(grantApplicationAccess(Enums.AUTH_2_1, Enums.AUTH_2_2, Enums.AUTH_2_3)) {
+				logger.info("Granted 2 ");
+				if(grantApplicationAccess(Enums.AUTH_3_1, Enums.AUTH_3_2, Enums.AUTH_3_3)) {
+					logger.info("Granted 3 ");
+					if(grantApplicationAccess(Enums.AUTH_4_1, Enums.AUTH_4_2, Enums.AUTH_4_3)) {
+						logger.info("Granted 4 ");
+						return true;
+					} else {
+						logger.info("ERRO 4 ");
+						return false;
+					}
+				} else {
+					logger.info("ERRO 3 ");
+					return false;
+				}
+			} else {
+				logger.info("ERRO 2 ");
+				return false;
+			}
+
+		} else {
+			logger.info("ERRO 1");
+			return false;
+		}
+	}
+
+	private WebElement investElementScreenLiquid(WebDriver driver) throws InterruptedException {
+		return getWebElement(driver, "//span[@class='sc-fONwsr lbnRXV']");
+	}
+
+	private String getStringValueToSheet(WebElement valorLiquido1) {
+		String valor1 = null;
+		if(valorLiquido1 != null) {
+			valor1 = valorLiquido1.getText();
+			valor1 = retirarCaracteresValor(valor1);
+		}
+		return valor1;
+	}
+
+	private void peformPlanilha(WebDriver driver, String valorGmail, String valorGmail2) throws InterruptedException {
+		driver.get(Enums.SITE_SHEET.getValor());
+
+		WebElement logarButton = getWebElement(driver, "//div[@id='gb']");
+		clicar(logarButton);
+
+		WebElement loginGmail = new WebDriverWait(driver, 20).until(
+				ExpectedConditions.presenceOfElementLocated(By.id("identifierId")));
+
+		performInput(driver, loginGmail, Enums.AUTH_3_1.getValor());
+
+
+		WebElement next = ((ChromeDriver) driver).findElementById("identifierNext");
+		clicar(next);
+
+		WebElement passGmail = new WebDriverWait(driver, 20).until(
+				ExpectedConditions.presenceOfElementLocated(By.name("password")));
+
+		Thread.sleep(1000L);
+
+		performInput(driver, passGmail, Enums.AUTH_4_1.getValor());
+
+
+		WebElement next2 = ((ChromeDriver) driver).findElementById("passwordNext");
+		clicar(next2);
+
+		botMessage("SHEET -> Logado | Verifique seu navegador");
+
+
+		logger.info("Trying to wait...");
+
+		Thread.sleep(20000L);
+
+		Actions planilha = new Actions(driver);
+		precionarTecla(planilha, Keys.ARROW_RIGHT, 4);
+		precionarTecla(planilha, Keys.ARROW_DOWN, 7);
+
+		WebElement cell = getWebElement(driver, "//div[@class='cell-input']");
+		verificarCellContent("Valor Liquido", planilha, cell, Arrays.asList(valorGmail));
+
+		precionarTecla(planilha, Keys.ARROW_DOWN, 4);
+
+		performCellEdit(valorGmail2, planilha, cell);
+
+		precionarTecla(planilha, Keys.ARROW_LEFT, 5);
+		precionarTecla(planilha, Keys.ARROW_UP, 14);
+
+		precionarTecla(planilha, Keys.ARROW_RIGHT, 8);
+		precionarTecla(planilha, Keys.ARROW_DOWN, 8);
+
+		verificarHistorico(planilha, cell, Arrays.asList(valorGmail, valorGmail2));
+		botMessage("Valores atualizados na planilha!");
+		botMessage("CRIPTAR SENHAS!");
+
+	}
+
+	private void verificarHistorico(Actions planilha, WebElement cell, List<String> valoresGmail) throws InterruptedException {
+		if(cell != null) {
+			while (cell.getText() != null && !cell.getText().equals("")) {
+				bugColunaVlInvestido(planilha, cell);
+				precionarTecla(planilha, Keys.ARROW_DOWN, 1);
+			}
+			cell.sendKeys(getDate());
+			precionarTecla(planilha, Keys.TAB, 1);
+			enviarCalculo(planilha, cell, valoresGmail);
+		} else {
+			logger.warning(ELEMENTO_CELULA_VALOR_NAO_ENCONTRADO);
+		}
+	}
+
+	private void bugColunaVlInvestido(Actions planilha, WebElement cell) throws InterruptedException {
+		if(cell.getText().equals(VALOR_INVESTIDO_CELL_TEXT)) {
+			precionarTecla(planilha, Keys.ARROW_RIGHT, 1);
+		}
+	}
+
+	private void performCellEdit(String valorGmail, Actions planilha, WebElement cell) throws InterruptedException {
+		if (cell != null) {
+			planilha.sendKeys(Keys.DELETE);
+			actionTime(planilha, 500L);
+			cell.sendKeys(valorGmail);
+			planilha.sendKeys(Keys.ENTER);
+			actionTime(planilha, 1000L);
+		} else {
+			logger.warning(ELEMENTO_CELULA_VALOR_NAO_ENCONTRADO);
+		}
+	}
+
+	private void verificarCellContent(String cellContent, Actions planilha, WebElement cell, List<String> valores) throws InterruptedException {
+ 		if (cell != null) {
+			boolean preenchido = cell.getText() != null && !cell.getText().equals(cellContent);
+			if (preenchido) {
+				while (cell.getText() != null && !cell.getText().equals(cellContent)) {
+					precionarTecla(planilha, Keys.ARROW_DOWN, 1);
+				}
+			}
+			precionarTecla(planilha, Keys.ARROW_DOWN, 1);
+			enviarCalculo(planilha, cell, valores);
+		} else {
+			logger.warning(ELEMENTO_CELULA_VALOR_NAO_ENCONTRADO);
+		}
+	}
+
+	private void enviarCalculo(Actions planilha, WebElement cell, List<String> valores) throws InterruptedException {
+		precionarTecla(planilha, Keys.DELETE, 1);
+		cell.sendKeys("=");
+		for (String valor : valores) {
+			cell.sendKeys(valor);
+			if((valores.size()-1) != (valores.indexOf(valor))) {
+				cell.sendKeys(" + ");
+			}
+		}
+		precionarTecla(planilha, Keys.ENTER, 1);
+	}
+
+	private void actionTime(Actions planilha, long l) throws InterruptedException {
+		planilha.build().perform();
+		Thread.sleep(l);
+	}
+
+	private void precionarTecla(Actions planilha, Keys key, int qtd) throws InterruptedException {
+		for (int i = 0; i < qtd; i++) {
+			planilha.sendKeys(key);
+		}
+		actionTime(planilha, 1000L);
+	}
+
+	private void dontLoadPage(WebDriver driver, Long tempo) {
+		new WebDriverWait(driver, tempo).until(
+				webDriver -> ((JavascriptExecutor) webDriver).executeScript("return document.readyState").equals("complete"));
+	}
+
+
 	private String retirarCaracteresValor(String valor) {
 		valor = valor.replace("R", "");
 		valor = valor.replace("$", "");
 		valor = valor.replace(" ", "");
 		valor = valor.replace(".", "");
-		valor = valor.replace(",", ".");
 		return valor;
 	}
 
@@ -124,6 +300,8 @@ public class EasyApplication implements CommandLineRunner {
 	private void clicar(WebElement elemento) {
 		if(elemento != null) {
 			elemento.click();
+		} else {
+			logger.info("Elemento não clicavel -> nulo");
 		}
 	}
 
@@ -137,15 +315,14 @@ public class EasyApplication implements CommandLineRunner {
 		return exist(driver, By.xpath(xpath));
 	}
 
-	private static boolean grantApplicationAccess() {
-		boolean auth1Match = PassCript.verifyUserPassword(Enums.AUTH_1_1.getValor(), Enums.AUTH_1_2.getValor(), Enums.AUTH_1_3.getValor());
-		boolean auth2Match = PassCript.verifyUserPassword(Enums.AUTH_2_1.getValor(), Enums.AUTH_2_2.getValor(), Enums.AUTH_2_3.getValor());
+	private static boolean grantApplicationAccess(Enums a11, Enums a12, Enums a13) {
+		boolean auth1Match = PassCript.verifyUserPassword(a11.getValor(), a12.getValor(), a13.getValor());
 
-		if(!auth2Match || !auth1Match) {
-//			botMessage("Autenticação - Falhou -> Easynvest Application\n" + getDate());
+		if(!auth1Match) {
+			botMessage("Autenticação - Falhou -> Easynvest Application\n" + getDate());
 			return false;
 		}
-//		botMessage("Autenticação - Permitida -> Easynvest Application\n" + getDate());
+		botMessage("Autenticação - Permitida -> Easynvest Application\n");
 		return true;
 	}
 
@@ -154,7 +331,7 @@ public class EasyApplication implements CommandLineRunner {
 	}
 
 	private static String getDate() {
-		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd");
+		SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
 		return format.format(new Date());
 	}
 

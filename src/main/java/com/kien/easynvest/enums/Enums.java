@@ -4,6 +4,7 @@ public enum Enums {
 
     /** Sites */
     SITE_AUTENTICACAO_EASY("https://www.easynvest.com.br/autenticacao/"),
+    SITE_SHEET("https://docs.google.com/spreadsheets/d/1uHgYLh0-abYhUOnKqEb1wehXCPMh9YY_Dx_joJwNWvo/edit#gid=564460096"),
 
     /** OTHER */
     TELEGRAM_KEY(""),
@@ -18,6 +19,18 @@ public enum Enums {
     AUTH_2_1(""),
     AUTH_2_2(""),
     AUTH_2_3(""),
+
+
+    /** Auth - gl */
+    AUTH_3_1(""),
+    AUTH_3_2(""),
+    AUTH_3_3(""),
+
+    /** Auth - gl */
+    AUTH_4_1(""),
+    AUTH_4_2(""),
+    AUTH_4_3(""),
+
 
     /** Investimentos */
     INVEST_1("Tesouro Selic 2023"),
