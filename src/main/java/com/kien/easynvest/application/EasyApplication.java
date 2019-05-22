@@ -38,10 +38,11 @@ public class EasyApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 		WebDriver driver;
-//		ChromeOptions chrome = new ChromeOptions();
-//        chrome.setHeadless(true);
-//        driver = new ChromeDriver(chrome);
-		driver = new ChromeDriver();
+		ChromeOptions chrome = new ChromeOptions();
+        chrome.setHeadless(true);
+		chrome.addArguments("window-size=1980,1080");
+        driver = new ChromeDriver(chrome);
+//		driver = new ChromeDriver();
 
 		if(verificarCredenciais()) {
 			try {
@@ -179,7 +180,7 @@ public class EasyApplication implements CommandLineRunner {
 		WebElement next2 = ((ChromeDriver) driver).findElementById("passwordNext");
 		clicar(next2);
 
-		botMessage("SHEET -> Logado | Verifique seu navegador");
+		botMessage("SHEET -> Logado | Verifique a planilha enquanto isso!");
 
 
 		logger.info("Trying to wait...");
