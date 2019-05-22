@@ -7,6 +7,7 @@ import com.pengrad.telegrambot.request.SendMessage;
 import org.junit.runner.Runner;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -49,18 +50,17 @@ public class EasyApplication implements CommandLineRunner {
 
 				dontLoadPage(driver, 2000L);
 
-				/** popUp Easy
-				fecharPopUp(driver);
-				 */
+//				popUp Easy
+//				fecharPopUp(driver);
 
 				WebElement login = new WebDriverWait(driver, 20).until(
 						ExpectedConditions.presenceOfElementLocated(By.name("username")));
 
-				performInput(driver, login, PassCript.sendHash(Enums.AUTH_1_1.getValor()));
+				performInput(driver, login, performCript(Enums.AUTH_1_1));
 
 				WebElement pass = driver.findElement(By.name("password"));
 
-				performInput(driver, pass, PassCript.sendHash(Enums.AUTH_2_1.getValor()));
+				performInput(driver, pass, performCript(Enums.AUTH_2_1));
 
 				driver.findElement(By.xpath("//button[@font-family='Rational-Medium']")).click();
 
@@ -71,10 +71,12 @@ public class EasyApplication implements CommandLineRunner {
 					finalizar(driver);
 				}
 
-				botMessage("Logado no site da corretora :)");
+				botMessage("Logado no site da corretora  ( ͡° ͜ʖ ͡°)");
 				botMessage(getDate());
 
-				WebElement investimento1 = getWebElement(driver, "//p[text()='" + Enums.INVEST_1.getValor() + "']");
+
+//				WebElement investimento1 = getWebElement(driver, "//p[text()='" + Enums.INVEST_1.getValor() + "']");
+				WebElement investimento1 = getWebElement(driver, "//div[@class='sc-fhYwyz ezDOlm']");
 				clicar(investimento1);
 
 				WebElement valorLiquido1 = investElementScreenLiquid(driver);
@@ -85,7 +87,9 @@ public class EasyApplication implements CommandLineRunner {
 
 				fecharPopUp(driver);
 
-				WebElement investimento2 = getWebElement(driver, "//p[text()='" + Enums.INVEST_2.getValor() + "']");
+//				WebElement investimento2 = getWebElement(driver, "//p[text()='" + Enums.INVEST_2.getValor() + "']");
+				WebElement investimento2 = ((ChromeDriver) driver).findElementByXPath("//p[text()='" + Enums.INVEST_2.getValor() + "']");
+//				WebElement investimento2 = getWebElement(driver, "//*[@id='app']/div[2]/div[2]/div/div/div/div[3]/div");
 				clicar(investimento2);
 
 				WebElement valorLiquido2 = investElementScreenLiquid(driver);
@@ -103,7 +107,6 @@ public class EasyApplication implements CommandLineRunner {
 				logger.warning(e.getLocalizedMessage());
 				botMessage("Algum Erro ocorreu, talvez algum elemento não foi encontrado, verifique a conexão da internet");
 			}
-
 		} else {
 			finalizar(driver);
 		}
@@ -111,29 +114,28 @@ public class EasyApplication implements CommandLineRunner {
 
 	private static boolean verificarCredenciais() {
 		if(grantApplicationAccess(Enums.AUTH_1_1, Enums.AUTH_1_2, Enums.AUTH_1_3)) {
-			logger.info("Granted 1 ");
+			logger.info("\nGranted 1 ");
 			if(grantApplicationAccess(Enums.AUTH_2_1, Enums.AUTH_2_2, Enums.AUTH_2_3)) {
-				logger.info("Granted 2 ");
+				logger.info("\nGranted 2 ");
 				if(grantApplicationAccess(Enums.AUTH_3_1, Enums.AUTH_3_2, Enums.AUTH_3_3)) {
-					logger.info("Granted 3 ");
+					logger.info("\nGranted 3 ");
 					if(grantApplicationAccess(Enums.AUTH_4_1, Enums.AUTH_4_2, Enums.AUTH_4_3)) {
-						logger.info("Granted 4 ");
+						botMessage("Todas as 4 camadas de credenciais estão - OK");
 						return true;
 					} else {
-						logger.info("ERRO 4 ");
+						logger.info("\nERRO 4 ");
 						return false;
 					}
 				} else {
-					logger.info("ERRO 3 ");
+					logger.info("\nERRO 3 ");
 					return false;
 				}
 			} else {
-				logger.info("ERRO 2 ");
+				logger.info("\nERRO 2 ");
 				return false;
 			}
-
 		} else {
-			logger.info("ERRO 1");
+			logger.info("\nERRO 1");
 			return false;
 		}
 	}
@@ -160,7 +162,7 @@ public class EasyApplication implements CommandLineRunner {
 		WebElement loginGmail = new WebDriverWait(driver, 20).until(
 				ExpectedConditions.presenceOfElementLocated(By.id("identifierId")));
 
-		performInput(driver, loginGmail, Enums.AUTH_3_1.getValor());
+		performInput(driver, loginGmail, performCript(Enums.AUTH_3_1));
 
 
 		WebElement next = ((ChromeDriver) driver).findElementById("identifierNext");
@@ -171,7 +173,7 @@ public class EasyApplication implements CommandLineRunner {
 
 		Thread.sleep(1000L);
 
-		performInput(driver, passGmail, Enums.AUTH_4_1.getValor());
+		performInput(driver, passGmail, performCript(Enums.AUTH_4_1));
 
 
 		WebElement next2 = ((ChromeDriver) driver).findElementById("passwordNext");
@@ -203,8 +205,10 @@ public class EasyApplication implements CommandLineRunner {
 
 		verificarHistorico(planilha, cell, Arrays.asList(valorGmail, valorGmail2));
 		botMessage("Valores atualizados na planilha!");
-		botMessage("CRIPTAR SENHAS!");
+	}
 
+	private static String performCript(Enums auth) {
+		return PassCript.sendHash(auth.getValor());
 	}
 
 	private void verificarHistorico(Actions planilha, WebElement cell, List<String> valoresGmail) throws InterruptedException {
@@ -319,10 +323,10 @@ public class EasyApplication implements CommandLineRunner {
 		boolean auth1Match = PassCript.verifyUserPassword(a11.getValor(), a12.getValor(), a13.getValor());
 
 		if(!auth1Match) {
-			botMessage("Autenticação - Falhou -> Easynvest Application\n" + getDate());
+//			botMessage("Autenticação - Falhou -> Easynvest Application\n" + getDate());
 			return false;
 		}
-		botMessage("Autenticação - Permitida -> Easynvest Application\n");
+//		botMessage("Autenticação - Permitida -> Easynvest Application\n");
 		return true;
 	}
 
